@@ -1,0 +1,770 @@
+{
+  "name": "Kassenbon-Scanner",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [-832, 352],
+      "id": "86f81b19-9e01-44b0-8282-eb6d034f7871",
+      "name": "Telegram-Nachricht",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dd8f3d24-38b6-4c5d-880d-3d41a17edf99",
+              "leftValue": "={{ $json.message.photo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-240, 336],
+      "id": "b4362ae4-eb29-4c03-ba6e-71e290b3aa59",
+      "name": "Bild?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "⌛ Bild wird verarbeitet...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [16, 160],
+      "id": "51585b21-da36-42d8-862d-436cd1aff236",
+      "name": "Wird geladen",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "❌ Du musst ein Bild hochladen!",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [16, 496],
+      "id": "62e4c8bc-b7b4-4002-b4fd-1e9c0a415b08",
+      "name": "Kein Bild",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[2].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [128, 320],
+      "id": "b47fe879-3dcf-403a-955c-a189d0302e0f",
+      "name": "Bild herunterladen",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentType": "image_url",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mistralAi",
+      "typeVersion": 1,
+      "position": [336, 320],
+      "id": "e1ae56e9-1718-4cdd-853d-6ddbb5b69749",
+      "name": "Text extrahieren",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Du bist ein Experte für die Analyse von Kassenbons. Prüfe den folgenden Text und entscheide NUR, ob es sich um einen Kassenbon handelt.\n\n**WICHTIGE REGELN:**\n1. Ein Kassenbon muss typische Elemente enthalten wie:\n   - Geschäftsname/Laden\n   - Artikel/Produkte mit Preisen\n   - Gesamtsumme oder \"Gesamt\"\n   - Datum und/oder Uhrzeit\n   - Eventuell: MwSt, Steuernummer, Kassennummer\n\n2. Wenn MINDESTENS 3 dieser typischen Elemente erkennbar sind, ist es wahrscheinlich ein Kassenbon.\n\n3. Antworte NUR mit einem dieser Werte:\n   - \"KASSENBON\" - wenn es sich eindeutig um einen Kassenbon handelt\n   - \"KEIN_KASSENBON\" - wenn es sich NICHT um einen Kassenbon handelt\n   - \"UNKLAR\" - wenn nicht genug Information vorhanden ist\n\nText zur Analyse:\n{{ $json.extractedText }}\n\n**ANTWORT (nur ein Wort):**",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [544, 320],
+      "id": "6bd0896f-d3cb-491c-a3ea-cb3dc6011f57",
+      "name": "Kassenbon Validierung"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [512, 528],
+      "id": "78a7f111-832e-4f12-a849-46b2405d9aef",
+      "name": "OpenAI Validation Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-kassenbon",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "KASSENBON",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [864, 320],
+      "id": "4b7761c4-e872-4c9d-86ae-38d59c3a3783",
+      "name": "Ist es ein Kassenbon?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram-Nachricht').item.json.message.chat.id }}",
+        "text": "❌ Das ist kein Kassenbon!\n\nBitte lade ein Foto eines Kassenbons hoch. Ein Kassenbon sollte folgende Elemente enthalten:\n• Geschäftsname\n• Artikel mit Preisen\n• Gesamtsumme\n• Datum",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1056, 544],
+      "id": "bfa06b3d-e960-4843-b906-9964646839f4",
+      "name": "Kein Kassenbon Nachricht",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Du erhältst den Text eines verifizierten Kassenbons.\nExtrahiere NUR die folgenden Informationen:\n\n1. **Gesamtpreis**: Der finale Gesamtbetrag (Begriffe wie \"Gesamt\", \"Summe\", \"Total\", \"Zu zahlen\")\n2. **Kaufdatum**: Das Datum des Einkaufs\n3. **Verkaufsstelle**: Die Verkaufsstelle (z.B. Lidl, Toom, McDonalds) \n\n**STRENGE REGELN:**\n- Gib NUR Werte zurück, die EXAKT im Text stehen\n- Keine Schätzungen, keine Interpretationen\n- Wenn ein Wert nicht gefunden wird: leerer String \"\"\n- Wenn die Verkaufsstelle keine geläufige ist, wurde sie vermutlich falsch erkannt. Dann nutze den leeren String \"\"\n- Verkaufsstelle \"L&DL\", \"K&DR\", \"K&DE\" oder Ähnliches => \"Lidl\"\n\n**Text des Kassenbons:**\n{{ $node[\"Text extrahieren\"].json.extractedText }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [1168, 304],
+      "id": "62a22e41-3918-4f61-a23f-8cd42e3c3d8a",
+      "name": "Daten Extraktion"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [1232, 624],
+      "id": "6437136f-0b2f-43ad-81b8-91216872e387",
+      "name": "OpenAI Extraction Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"total_price\": \"23,94\",\n  \"purchase_date\": \"2025-08-24\",\n  \"store\": \"REWE\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [1408, 624],
+      "id": "142ca464-7ae8-4335-9fd8-d657c77c6132",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram-Nachricht').item.json.message.chat.id }}",
+        "text": "=⚠️ Kassenbon erkannt, aber unvollständige Daten:\n\n{{ $json.output.total_price ? '✅ Betrag: ' + $json.output.total_price + ' €' : '❌ Betrag nicht erkannt' }}\n{{ $json.output.purchase_date ? '✅ Datum: ' + $json.output.purchase_date : '❌ Datum nicht erkannt' }}\n\nBitte stelle sicher, dass der Kassenbon gut lesbar ist.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1664, 528],
+      "id": "ed44305e-7278-4ee0-b137-d99e03c225c9",
+      "name": "Unvollständige Daten",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1K9cyNRrLaUW5WoIX2vOECUspuTKoWoEC0zdSp3cYypc",
+          "mode": "list",
+          "cachedResultName": "Einkaufsliste"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Tabellenblatt1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Betrag (€)": "={{ $('Daten vollständig?').item.json.output.total_price }}",
+            "Datum": "={{ $('Daten vollständig?').item.json.output.purchase_date }}",
+            "Verkaufstelle": "={{ $('Daten vollständig?').item.json.output.store }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Verkaufstelle",
+              "displayName": "Verkaufstelle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Datum",
+              "displayName": "Datum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Betrag (€)",
+              "displayName": "Betrag (€)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [2112, 192],
+      "id": "35895208-2728-4f42-82c5-0e2b4657b31c",
+      "name": "Zeile zu Tabelle hinzufügen",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram-Nachricht').item.json.message.from.id }}",
+        "text": "=✨ Die Daten wurden in die Tabelle eingetragen.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2320, 192],
+      "id": "ab3183dc-fe19-459b-89eb-e089a05118a4",
+      "name": "Erfolgsmeldung",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dd8f3d24-38b6-4c5d-880d-3d41a17edf99",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-544, 352],
+      "id": "01c8b644-7177-4eca-a4c9-764ad14e9dff",
+      "name": "Whitelist?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "❌ Du hast keine Rechte, um dieses Tool zu benutzen!",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [-384, 496],
+      "id": "db442edb-23c9-403b-84b5-380a74082dda",
+      "name": "Keine Berechtigungen",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "price-check",
+              "leftValue": "={{ $json.output.total_price }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "date-check",
+              "leftValue": "={{ $json.output.purchase_date }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1456, 304],
+      "id": "7b1a29b3-26f4-4796-89f6-eee9b4bba444",
+      "name": "Daten vollständig?"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram-Nachricht').item.json.message.chat.id }}",
+        "message": "=✅ Kassenbon erfolgreich verarbeitet!\n\n🏪 *Verkaufsstelle*: {{ $json.output.store || \"Unbekannt\" }}\n💰 *Betrag*: {{ $json.output.total_price }} €\n📅 *Datum*: {{ $json.output.purchase_date }}\n\nWurden die Eingaben korrekt erkannt?",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "✅ Korrekt",
+            "disapproveLabel": "❌ Nicht korrekt"
+          }
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1664, 208],
+      "id": "fbe6f009-46e4-4146-b86b-e2c779dfd9f1",
+      "name": "Send message and wait for response",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "17e61591-ce42-4cb2-8fba-63c5ff5fd7b9",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1872, 208],
+      "id": "2958dacf-1295-48e0-a768-e26e78a35479",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram-Nachricht').item.json.message.from.id }}",
+        "text": "=🥲 Bitte versuche es erneut!",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2016, 384],
+      "id": "ea3861aa-0957-4d93-8345-b3342a504825",
+      "name": "Fehlermeldung",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Kassenbon-Scanner Bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram-Nachricht": {
+      "main": [
+        [
+          {
+            "node": "Whitelist?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bild?": {
+      "main": [
+        [
+          {
+            "node": "Wird geladen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Bild herunterladen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Kein Bild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bild herunterladen": {
+      "main": [
+        [
+          {
+            "node": "Text extrahieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text extrahieren": {
+      "main": [
+        [
+          {
+            "node": "Kassenbon Validierung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kassenbon Validierung": {
+      "main": [
+        [
+          {
+            "node": "Ist es ein Kassenbon?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Validation Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Kassenbon Validierung",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ist es ein Kassenbon?": {
+      "main": [
+        [
+          {
+            "node": "Daten Extraktion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Kein Kassenbon Nachricht",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daten Extraktion": {
+      "main": [
+        [
+          {
+            "node": "Daten vollständig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Extraction Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Daten Extraktion",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Daten Extraktion",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zeile zu Tabelle hinzufügen": {
+      "main": [
+        [
+          {
+            "node": "Erfolgsmeldung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whitelist?": {
+      "main": [
+        [
+          {
+            "node": "Bild?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Berechtigungen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daten vollständig?": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unvollständige Daten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Zeile zu Tabelle hinzufügen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fehlermeldung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "413d7705-c6a2-476d-91e5-5b501d76bd96",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": ""
+  },
+  "id": "ogPEW9KxC4elGGkN",
+  "tags": []
+}
